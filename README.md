@@ -39,19 +39,27 @@ token-meter/
 
 前置要求：Node.js 18+。
 
-clone 位置随意（桌面、D 盘、任意目录均可），命令里只是指向 clone 出来的文件夹：
+**方式一：作为插件市场源安装（推荐，支持后续更新）**
 
 ```bash
-git clone <仓库地址> token-meter        # 克隆到一个叫 token-meter 的文件夹
-qodercli plugin install --scope user ./token-meter
+qodercli plugin marketplace add 'https://github.com/CuiCuZn/token-meter.git'
+qodercli plugin install token-meter@token-meter
 qodercli plugin list --json             # 确认已安装、状态 enabled
+```
+
+**方式二：克隆到本地安装**
+
+```bash
+git clone https://github.com/CuiCuZn/token-meter.git
+qodercli plugin install --scope user ./token-meter
 ```
 
 说明：
 
 - `--scope user`：安装到当前用户级，**所有项目可用**；只想在某一个项目里用可改为
   在该项目目录下执行 `--scope local`；
-- 路径建议避免中文与空格，且不要嵌在其他 git 仓库内部；
+- clone 路径随意，建议避免中文与空格，且不要嵌在其他 git 仓库内部；
+- 也可以把仓库 ZIP 下载后在 IDE 里从「扩展 → 插件 → 添加插件 → 上传插件」导入；
 - 安装完成后，技能、命令和 MCP 工具会被自动发现（若未生效，重启一次 IDE）。
 
 ## 使用
