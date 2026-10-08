@@ -1,7 +1,7 @@
 {
   "name": "token-meter",
   "displayName": "Token 消耗面板",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Local Qoder CN usage dashboard: parse session transcripts for recorded credits and estimated tokens, render a Canvas panel, and expose MCP query tools.",
   "descriptionZh": "本地解析 Qoder CN 会话记录，可视化积分（记录值）与估算 token 消耗；附带 MCP 查询工具与 Canvas 面板。",
   "author": { "name": "CuiCuZn" },
