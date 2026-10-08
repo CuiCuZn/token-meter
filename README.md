@@ -37,29 +37,32 @@ token-meter/
 
 ## 安装
 
-前置要求：Node.js 18+。
+前置要求：Node.js 18+（技能生成面板与命令行查询需要；MCP 使用 IDE 内置运行时）。
 
-**方式一：作为插件市场源安装（推荐，支持后续更新）**
+**方式一：IDE 导入 ZIP（推荐，无需任何额外工具）**
+
+1. 从 [Releases 页面](https://github.com/CuiCuZn/token-meter/releases) 下载
+   `token-meter-<版本>.zip`（或自行用 `dev/make-zip.py` 从仓库打包）；
+2. 在 Qoder 中打开：**扩展 → 插件 → 添加插件 → 上传插件**，选择该 ZIP 导入；
+3. 导入前可先检查插件组件（技能 / 命令 / MCP），确认无误后启用。
+
+**方式二（可选，命令行用户）**
+
+需另行安装 Qoder CLI（独立命令行产品）：
 
 ```bash
-qodercli plugin marketplace add 'https://github.com/CuiCuZn/token-meter.git'
-qodercli plugin install token-meter@token-meter
-qodercli plugin list --json             # 确认已安装、状态 enabled
+npm install -g @qodercn-ai/qoderclicn        # Qoder CN 用户（命令名 qoderclicn）
+qoderclicn plugin marketplace add 'https://github.com/CuiCuZn/token-meter.git'
+qoderclicn plugin install token-meter@token-meter
+qoderclicn plugin list --json                # 确认已安装、状态 enabled
 ```
 
-**方式二：克隆到本地安装**
-
-```bash
-git clone https://github.com/CuiCuZn/token-meter.git
-qodercli plugin install --scope user ./token-meter
-```
+（国际版 Qoder 对应包为 `@qoder-ai/qodercli`，命令名 `qodercli`。）
 
 说明：
 
-- `--scope user`：安装到当前用户级，**所有项目可用**；只想在某一个项目里用可改为
-  在该项目目录下执行 `--scope local`；
-- clone 路径随意，建议避免中文与空格，且不要嵌在其他 git 仓库内部；
-- 也可以把仓库 ZIP 下载后在 IDE 里从「扩展 → 插件 → 添加插件 → 上传插件」导入；
+- ZIP 导入安装到**当前设备**；命令行方式可通过 `--scope user` 安装到用户级
+  （全部项目可用）；
 - 安装完成后，技能、命令和 MCP 工具会被自动发现（若未生效，重启一次 IDE）。
 
 ## 使用
