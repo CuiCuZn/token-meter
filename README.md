@@ -1,9 +1,8 @@
-# Token 消耗面板（token-meter）
+# Token 消耗面板（token-panel）
 
-Qoder CN 目前只展示积分消耗，没有 token 维度的统计。本插件在**本地**解析 Qoder CN
+Qoder CN 目前只展示积分消耗，没有 token 维度的统计。本技能在**本地**解析 Qoder CN
 的会话转录，生成一个**单文件 HTML 消耗面板**：**token 为主角**、中文界面、完全离线
-（无 CDN、无外部资源，双击即开）。同时提供 `/token-panel` 技能（对话查询 + 生成
-面板）、MCP 查询工具，以及可选的 IDE 内画布面板。
+（无 CDN、无外部资源，双击即开），并支持对话式查询用量。
 
 - 数据源：`~/.qoder-cn/projects/**/*.jsonl`（会话转录，只读）
 - 输出：`~/.qoder-cn/token-meter/token-panel.html`（固定位置，每次覆盖更新）
@@ -12,58 +11,44 @@ Qoder CN 目前只展示积分消耗，没有 token 维度的统计。本插件�
 ## 目录结构
 
 ```text
-token-meter/
-├── .qoder-plugin/plugin.json    # 插件清单（插件导入通道用）
-├── mcp.json                     # MCP Server 注册（stdio）
-├── commands/token-panel.md      # 斜杠命令
-├── skills/token-panel/          # ★ 技能目录（技能导入通道用：ZIP 根目录含 SKILL.md）
-│   ├── SKILL.md
-│   └── references/              # 技能自带工具（零依赖 Node）
-│       ├── core/                # 扫描/解析/估算/聚合/HTML 生成/CLI
-│       ├── server/server.mjs    # MCP stdio server（7 个查询工具）
-│       └── canvases/…           # 可选的 IDE 内画布面板
-├── assets/avatar.svg
-├── LICENSE                      # MIT
+token-panel/
+├── SKILL.md              # 技能定义（发布/导入的主文件）
+├── references/           # 技能自带工具（零依赖 Node）
+│   └── core/
+│       ├── scan.mjs          # 扫描会话文件
+│       ├── parse.mjs         # 增量 JSONL 解析
+│       ├── estimate.mjs      # token 估算
+│       ├── models.mjs        # 模型显示名解析（dfmodel → DeepSeek-V4-Flash）
+│       ├── aggregate.mjs     # 多维聚合与面板数据
+│       ├── render-html.mjs   # 单文件 HTML 面板生成器
+│       ├── store.mjs         # 索引缓存（原子写 + 锁）
+│       ├── service.mjs       # 增量刷新编排
+│       ├── paths.mjs         # 路径解析
+│       └── cli.mjs           # 命令行入口
+├── dev/make-zip.py       # 打包脚本（维护者用）
+├── LICENSE               # MIT
 └── README.md
 ```
 
 ## 安装
 
-前置要求：Node.js 18+（技能执行命令行时需要；MCP 使用 IDE 内置运行时）。
+前置要求：Node.js 18+。
 
-Qoder CN 有**两条 ZIP 导入通道，结构要求不同、不能混用**，本仓库提供两个对应包：
-
-**方式一：技能导入（最简单，只装技能+工具）**
+**方式一：技能 ZIP 导入（推荐）**
 
 从 [Releases](https://github.com/CuiCuZn/token-meter/releases) 下载
-`token-panel-skill-<版本>.zip`（ZIP 根目录含 `SKILL.md`），在 IDE 的技能导入入口
-上传该 ZIP 即可。
+`token-panel-<版本>.zip`（ZIP 根目录含 `SKILL.md`），在 IDE 的技能导入入口上传该
+ZIP 即可。
 
-**方式二：插件导入（完整组件：技能 + 命令 + MCP）**
-
-从 [Releases](https://github.com/CuiCuZn/token-meter/releases) 下载
-`token-meter-<版本>.zip`（ZIP 根目录含 `.qoder-plugin/plugin.json`），在
-「扩展 → 插件 → 添加插件 → 上传插件」导入。
-
-**方式三（可选，命令行用户）**
-
-需另行安装 Qoder CLI（独立命令行产品，非必需）：
+**方式二：手动复制**
 
 ```bash
-npm install -g @qodercn-ai/qoderclicn        # Qoder CN 用户（命令名 qoderclicn）
-qoderclicn plugin marketplace add 'https://github.com/CuiCuZn/token-meter.git'
-qoderclicn plugin install token-meter@token-meter
-qoderclicn plugin list --json                # 确认已安装、状态 enabled
+git clone https://github.com/CuiCuZn/token-meter.git token-panel
+# 将整个文件夹复制为技能目录：
+#   ~/.qoder-cn/skills/token-panel
 ```
 
-说明：
-
-- ⚠️ 两个 ZIP **不能混用**：技能导入要求根目录含 `SKILL.md`，插件导入要求根目录含
-  `.qoder-plugin/plugin.json`，用错通道会提示结构不符；
-- 不要用 GitHub 仓库页的 "Download ZIP" 按钮（那是源码快照，多一层文件夹壳，两个
-  通道都不识别），请从 Releases 下载打包好的 ZIP；
-- 安装完成后，技能、命令和 MCP 工具会被自动发现（若未生效，重启一次 IDE）；
-- 维护者重新打包：`python dev/make-zips.py`（同时生成上述两个 ZIP）。
+安装完成后，技能会被自动发现（若未生效，重启一次 IDE）。
 
 ## 使用
 
@@ -98,15 +83,15 @@ qoderclicn plugin list --json                # 确认已安装、状态 enabled
 - 只写自有目录：索引缓存与生成的 HTML 都在 `~/.qoder-cn/token-meter/` 下；
 - 不联网：解析、估算、生成全部在本机完成；
 - 生成的 HTML 包含提问摘要（截断展示），**转发给别人前请注意脱敏**；
-- 卸载：删除插件/技能目录 + 删除 `~/.qoder-cn/token-meter/` 即完全清理。
+- 卸载：删除技能目录 + 删除 `~/.qoder-cn/token-meter/` 即完全清理。
 
 **限制**
 
 - token 为本地估算，**不是计费口径**；估算不含系统提示与工具定义，可能低于真实输入量；
 - 数据更新仅在“生成面板那一刻”，HTML 是静态快照，看最新数据需重新生成一次；
 - 每个 Qoder 大版本可能调整会话文件结构，解析层已做宽容降级，极端情况下需在
-  `skills/token-panel/references/core/parse.mjs` 补充适配；
-- 使用命令行/MCP 需要系统安装 Node.js（IDE 内置运行时仅覆盖插件内 MCP）。
+  `references/core/parse.mjs` 补充适配；
+- 使用技能需要系统安装 Node.js 18+。
 
 **免责声明**
 

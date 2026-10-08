@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "token-meter": {
-      "command": "${QODER_NODE_RUNTIME}",
-      "args": ["${QODER_PLUGIN_ROOT}/skills/token-panel/references/server/server.mjs"]
-    }
-  }
-}

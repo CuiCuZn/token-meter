@@ -6,9 +6,8 @@
 //   node cli.mjs days    [--range 30d] [--json]
 //   node cli.mjs projects [--range all] [--json]
 //   node cli.mjs models   [--range all] [--json]
-//   node cli.mjs sessions [--range all] [--sort credits|requests|recent] [--limit 20] [--json]
+//   node cli.mjs sessions [--range all] [--sort credits|requests|tokens|recent] [--limit 20] [--json]
 //   node cli.mjs detail   --session <sessionId> [--json]
-//   node cli.mjs panel    [--range 30d] [--out <file>] [--json]
 //   node cli.mjs html     [--out <file>] [--open] [--json]
 
 import { promises as fs } from "node:fs";
@@ -195,22 +194,7 @@ async function main() {
   }
 
   if (command === "panel") {
-    const payload = buildPanelPayload(index, { range: args.range ?? "30d" });
-    if (args.out) {
-      await fs.mkdir(path.dirname(path.resolve(args.out)), { recursive: true });
-      await fs.writeFile(path.resolve(args.out), JSON.stringify(payload, null, 2), "utf8");
-      emit(args, { out: path.resolve(args.out) }, [`面板数据已写入 ${path.resolve(args.out)}`]);
-      return;
-    }
-    emit(
-      args,
-      payload,
-      [
-        `面板数据（range=${payload.range}）：KPI 积分 ${fmtCredits(payload.kpi.creditsTotal)}，会话 ${payload.kpi.sessions}，天数 ${payload.days.length}`,
-        `加 --out <file> 可导出 JSON 查看。`,
-      ],
-    );
-    return;
+    throw new Error("panel 命令已移除（画布功能已下线），请使用 html 命令生成面板。");
   }
 
   throw new Error(`未知命令：${command}`);

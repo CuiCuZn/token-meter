@@ -1,6 +1,6 @@
 ---
 name: token-panel
-version: 0.2.1
+version: 0.3.0
 description: >-
   Show Qoder CN local token and credit usage: refresh the usage index from
   session transcripts, answer usage questions (today / 7 days / 30 days, by
@@ -21,15 +21,9 @@ argument-hint: refresh|summary|面板
 
 ## 工具位置
 
-本技能自带工具位于技能目录的 `references/` 下（core、server、canvases）。
-技能目录因安装方式而异：
-
-| 安装方式 | 技能目录 |
-| --- | --- |
-| 技能 ZIP 导入 / 手动复制 | `~/.qoder-cn/skills/token-panel` |
-| 插件安装 | 插件根目录下的 `skills/token-panel` |
-
-下文命令用 `$SKILL_DIR` 表示技能目录。技能 ZIP 导入安装时先执行：
+本技能自带工具（零依赖 Node）位于技能目录的 `references/` 下。技能 ZIP 导入或
+手动安装时，技能目录为 `~/.qoder-cn/skills/token-panel`。下文命令用 `$SKILL_DIR`
+表示技能目录，先执行：
 
 ```bash
 SKILL_DIR="$HOME/.qoder-cn/skills/token-panel"
