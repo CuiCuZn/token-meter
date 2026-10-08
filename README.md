@@ -39,19 +39,20 @@ token-meter/
 
 前置要求：Node.js 18+。
 
-**方式一：从 Git 仓库安装（推荐）**
+clone 位置随意（桌面、D 盘、任意目录均可），命令里只是指向 clone 出来的文件夹：
 
 ```bash
-git clone <仓库地址>
-qodercli plugin install --scope local <克隆目录>/token-meter
-qodercli plugin list --json     # 确认已安装、状态 enabled
+git clone <仓库地址> token-meter        # 克隆到一个叫 token-meter 的文件夹
+qodercli plugin install --scope user ./token-meter
+qodercli plugin list --json             # 确认已安装、状态 enabled
 ```
 
-**方式二：从 zip 包安装**
+说明：
 
-解压 `token-meter-<版本>.zip` 后，执行同样的 `qodercli plugin install` 命令。
-
-安装完成后，技能、命令和 MCP 工具会被自动发现（若未生效，重启一次 IDE）。
+- `--scope user`：安装到当前用户级，**所有项目可用**；只想在某一个项目里用可改为
+  在该项目目录下执行 `--scope local`；
+- 路径建议避免中文与空格，且不要嵌在其他 git 仓库内部；
+- 安装完成后，技能、命令和 MCP 工具会被自动发现（若未生效，重启一次 IDE）。
 
 ## 使用
 
@@ -95,3 +96,14 @@ qodercli plugin list --json     # 确认已安装、状态 enabled
 - 每个 Qoder 大版本可能调整会话文件结构，解析层已做宽容降级，极端情况下需在
   `core/parse.mjs` 补充适配；
 - 使用命令行/MCP 需要系统安装 Node.js（IDE 内置运行时仅覆盖插件内 MCP）。
+
+**免责声明**
+
+- 本项目为开源工具，按「现状」（as-is）提供，不附带任何明示或暗示的担保；
+- 所有统计（尤其是 token 估算值）仅供参考，可能与真实用量存在偏差，
+  **不构成计费、结算或对账依据**；
+- Qoder 客户端升级可能导致会话文件结构变化，进而造成解析失效或数据不准，
+  作者不承担由此产生的任何直接或间接损失；
+- 请在遵守你所在组织 IT 与数据合规规定的前提下使用本工具。
+
+本项目基于 [MIT License](./LICENSE) 开源。
