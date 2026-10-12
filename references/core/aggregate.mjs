@@ -221,74 +221,61 @@ export function sessionDetail(index, sessionId) {
   };
 }
 
-function scopesTotals(index) {
-  const scopes = {};
-  for (const key of ["today", "7d", "30d", "all"]) {
-    const t = totals(index, filterRequests(index, { range: key }));
-    scopes[key] = {
-      credits: t.credits,
-      requests: t.requests,
-      sessions: t.sessions,
-      projects: t.projects,
-      tokensInEst: t.tokensInEst,
-      tokensOutEst: t.tokensOutEst,
-      tokensTotalEst: t.tokensInEst + t.tokensOutEst,
-      hasRecordedTokens: t.hasRecordedTokens,
-      tokensInRecorded: t.tokensInRecorded,
-      tokensOutRecorded: t.tokensOutRecorded,
-    };
-  }
-  return scopes;
-}
+// Compact per-request payload for the HTML panel: the page filters and
+// aggregates client-side, so every request is embedded (interned session /
+// model indexes keep the file small). Short keys: s=session, t=epoch ms,
+// i/o=estimated tokens, c=credits, x=context ratio, m=model, r=stop reason.
+export function buildPanelPayload(index) {
+  const requests = [];
+  const sessions = [];
+  const sessionIndex = new Map();
+  const models = [];
+  const modelIndex = new Map();
 
-export function buildPanelPayload(index, { range = "30d", sessionLimit = 60, detailLimit = 30 } = {}) {
-  const records = filterRequests(index, { range });
-  const kpi = totals(index, records);
-  const todayRecords = filterRequests(index, { range: "today" });
-  const todayCredits = totals(index, todayRecords).credits;
-  const days = groupByDay(index, filterRequests(index, { range: "30d" }));
-  const projects = groupBy(index, records, "project").slice(0, 12);
-  const models = groupBy(index, records, "model").slice(0, 12);
-  const sessions = listSessions(index, records, { sort: "credits", limit: sessionLimit });
-  const details = {};
-  for (const session of sessions.slice(0, detailLimit)) {
-    const detail = sessionDetail(index, session.sessionId);
-    if (detail) {
-      details[session.sessionId] = detail.requests.map((row) => ({
-        ts: row.ts,
-        model: row.model,
-        credits: row.credits,
-        tokensIn: row.tokensIn,
-        tokensOut: row.tokensOut,
-        tokensInEst: row.tokensInEst,
-        tokensOutEst: row.tokensOutEst,
-        ctxRatio: row.ctxRatio,
-        stopReason: row.stopReason,
-      }));
+  const sorted = [...index.requests].sort((a, b) => String(a.ts ?? "").localeCompare(String(b.ts ?? "")));
+  for (const rec of sorted) {
+    if (!rec.ts) continue;
+    const t = new Date(rec.ts).getTime();
+    if (Number.isNaN(t)) continue;
+
+    let si = sessionIndex.get(rec.sessionId);
+    if (si === undefined) {
+      si = sessions.length;
+      sessionIndex.set(rec.sessionId, si);
+      const meta = index.files[`${rec.project}/${rec.sessionId}.jsonl`];
+      sessions.push({
+        id: rec.sessionId,
+        project: rec.project,
+        prompt: meta?.firstPromptPreview ?? null,
+      });
     }
+
+    const name = resolveModelName(rec.model);
+    let mi = modelIndex.get(name);
+    if (mi === undefined) {
+      mi = models.length;
+      modelIndex.set(name, mi);
+      models.push(name);
+    }
+
+    const est = calibratedEstimate(index, rec);
+    requests.push({
+      s: si,
+      t,
+      i: est.tokensInEst,
+      o: est.tokensOutEst,
+      c: rec.credits === null || rec.credits === undefined ? null : Math.round(rec.credits * 10000) / 10000,
+      x: rec.ctxRatio === null || rec.ctxRatio === undefined ? null : Math.round(rec.ctxRatio * 100000) / 100000,
+      m: mi,
+      r: rec.stopReason ?? null,
+    });
   }
+
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
-    range,
-    scopes: scopesTotals(index),
-    kpi: {
-      creditsToday: todayCredits,
-      creditsTotal: kpi.credits,
-      requests: kpi.requests,
-      sessions: kpi.sessions,
-      projects: kpi.projects,
-      tokensInEst: kpi.tokensInEst,
-      tokensOutEst: kpi.tokensOutEst,
-      hasRecordedTokens: kpi.hasRecordedTokens,
-      tokensInRecorded: kpi.tokensInRecorded,
-      tokensOutRecorded: kpi.tokensOutRecorded,
-      lastTs: kpi.lastTs,
-    },
-    days,
-    projects,
-    models,
+    requests,
     sessions,
-    details,
+    models,
   };
 }

@@ -77,7 +77,7 @@ async function main() {
   if (command === "html") {
     await refresh({ full: false });
     const freshIndex = await loadIndexSafe();
-    const payload = buildPanelPayload(freshIndex, { range: "30d" });
+    const payload = buildPanelPayload(freshIndex);
     const html = renderPanelHtml(payload);
     const outPath = path.resolve(args.out ?? "token-panel.html");
     await fs.writeFile(outPath, html, "utf8");
