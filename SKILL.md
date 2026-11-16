@@ -1,6 +1,6 @@
 ---
 name: token-panel
-version: 0.4.0
+version: 0.5.0
 description: >-
   Show Qoder CN local token and credit usage: refresh the usage index from
   session transcripts, answer usage questions (today / 7 days / 30 days, by
@@ -52,18 +52,24 @@ SKILL_DIR="$HOME/.qoder-cn/skills/token-panel"
 
 ## 数据口径
 
-- **请求粒度**：一次模型请求 = 会话文件中一条带 `usage` 的 assistant 记录。文件里
-  一次请求会拆成 thinking / text / tool_use 多个链式片段，只有末段带用量，解析器
-  会按链合并，输出 token 计整轮。
-- **token（主角，本地估算）**：当前 Qoder CN 版本不记录 token 计数（字段恒为 0），
-  面板显示的是**本地估算值**——输入按该请求之前的上下文累计、输出按回复内容估算
-  （ASCII ÷4、中文 ÷1.6），估算不含系统提示与工具定义，可能低于真实输入量；若将来
-  版本恢复记录值，面板会自动改用真实值并按模型校准。汇报时带一句「本地估算」即可。
-- **积分 credits**：来自会话记录的真实值，面板中仅作参考、不突出展示。
+- **双数据源（自动合并，互补不重叠）**：旧数据（Qoder 0.5.11 及更早）来自会话转录
+  `usage` 字段（逐请求）；Qoder 0.5.12（2026-11-13）起转录不再写 usage，改为读取
+  应用本地数据库 `%APPDATA%\com.qodercn.app.stable\main.sqlite` 中
+  `chat_session_messages.turn_credits`（每轮**实扣积分**，真实值）。
+- **请求粒度（两代同口径）**：一次模型请求 = 一段 assistant 片段链（thinking /
+  text / tool_use 通过 parentUuid 串联）。旧数据有 `usage` 直接成记录；新数据无
+  usage，按同一链结构结合内容逐请求估算 token，并在该轮最后一次请求上挂载数据库
+  的整轮实扣积分。面板「请求数」两代可直接对比。
+- **token（主角，本地估算）**：任何版本都不记录 token 计数，面板显示的是**本地
+  估算值**——输入按该请求之前的上下文累计、输出按回复内容估算（ASCII ÷4、中文
+  ÷1.6），估算不含系统提示与工具定义，可能低于真实输入量；汇报时带一句「本地
+  估算」即可。
+- **积分 credits**：旧数据来自转录 usage、新数据来自数据库每轮实扣值，均为真实值；
+  新数据的积分粒度是「轮」（一次提问=一轮），面板中仅作参考、不突出展示。
 - **模型名**：运行时读取 Qoder 本地模型目录缓存映射为真名（如 `dfmodel` →
   `DeepSeek-V4-Flash`），Qoder 新增模型会自动跟上。
-- **索引缓存**：`~/.qoder-cn/token-meter/index.json`，按文件偏移量增量解析；历史数据
-  只全量解析一次，后续刷新只读新增字节（毫秒级）。
+- **索引缓存**：`~/.qoder-cn/token-meter/index.json`，按文件偏移量增量解析历史转录；
+  数据库轮次每次刷新全量比对更新（同一轮按 session + turn 去重）。
 
 ## 工作流
 
@@ -92,11 +98,14 @@ SKILL_DIR="$HOME/.qoder-cn/skills/token-panel"
 
 - 面板 HTML 是静态快照，"更新于"时间之后的数据不会自动出现，需重跑生成命令；
 - 生成的 HTML 含提问摘要（截断展示），提醒用户不要外发；
-- 需要系统安装 Node.js 18+（Windows 下 `$HOME` 等价 `%USERPROFILE%`）；
-- 全程只读本机会话转录，不修改任何 Qoder 文件；索引缓存与生成的 HTML 只写在
-  `~/.qoder-cn/token-meter/` 下；卸载 = 删除技能目录 + 删除该目录，无残留；
-- 每个 Qoder 大版本可能调整会话文件结构，解析层已做宽容降级，极端情况下需补充
-  `references/core/parse.mjs` 的适配。
+- 需要系统安装 Node.js 22.5+（内置 `node:sqlite`；Windows 下 `$HOME` 等价
+  `%USERPROFILE%`）；
+- 需要只读访问 Qoder 应用数据库 `main.sqlite`（应用运行时也可读取）；数据库缺失或
+  版本过旧时自动退化为仅转录模式（新数据为 0），不影响历史数据；
+- 全程只读本机会话转录与应用数据库，不修改任何 Qoder 文件；索引缓存与生成的 HTML
+  只写在 `~/.qoder-cn/token-meter/` 下；卸载 = 删除技能目录 + 删除该目录，无残留；
+- 每个 Qoder 大版本可能调整会话文件/数据库结构，解析层已做宽容降级，极端情况下需
+  补充 `references/core/parse.mjs` 或 `references/core/usage-db.mjs` 的适配。
 
 ## 验证方法
 

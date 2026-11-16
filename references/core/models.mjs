@@ -10,6 +10,7 @@ import path from "node:path";
 const APP_ID = "com.qodercn.app.stable";
 
 const STATIC_FALLBACK = new Map([
+  ["auto", "自动"],
   ["dfmodel", "DeepSeek-V4-Flash"],
   ["dmodel", "DeepSeek-V4-Pro"],
   ["gfmodel", "GLM-5.3-Flash"],

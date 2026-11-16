@@ -26,7 +26,57 @@ export function initialFileState() {
     firstTs: null,
     lastTs: null,
     requests: 0,
+    openTurn: null,
+    chainTs: null,
+    chainModel: null,
+    chainStopReason: null,
+    chainTurnId: null,
+    chainEmitted: false,
   };
+}
+
+function normalizeTs(value) {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+  return null;
+}
+
+// New Qoder versions (0.5.12+) drop `message.usage` from transcripts; per-request
+// estimates are rebuilt from content instead. One assistant fragment chain still
+// equals one model request (verified against the app database's turnCount), so
+// the chain is finalized at its end and carries inputSnapshot/pendingOut exactly
+// like a usage-backed record would. Skipped when a usage record was already
+// emitted for the chain (old-format files).
+function finalizeChain(state, records, fileMeta) {
+  if (state.chainEmitted) return;
+  if (!state.pendingOut || state.pendingOut <= 0) return;
+  if (!state.chainTs) return;
+  records.push({
+    id: `chain:${fileMeta.sessionId}:${state.chainTs}`,
+    file: fileMeta.relPath,
+    sessionId: fileMeta.sessionId,
+    project: fileMeta.project,
+    ts: state.chainTs,
+    model: state.chainModel || state.model || "unknown",
+    credits: null,
+    originalCredits: null,
+    billable: false,
+    tokensIn: null,
+    tokensOut: null,
+    cacheRead: null,
+    cacheCreate: null,
+    tokensInEst: state.inputSnapshot ?? 0,
+    tokensOutEst: state.pendingOut,
+    ctxRatio: null,
+    stopReason: state.chainStopReason ?? null,
+    promptId: state.lastPromptId,
+    turnId: state.chainTurnId ?? null,
+  });
+  state.chainEmitted = true;
+  state.pendingOut = 0;
 }
 
 function positiveOrNull(value) {
@@ -86,7 +136,7 @@ function processEntry(entry, state, records, fileMeta) {
 
   const contentText = extractText(message.content);
   const contentTokens = estimateTokens(contentText);
-  const ts = typeof entry.timestamp === "string" ? entry.timestamp : null;
+  const ts = normalizeTs(entry.timestamp);
   if (ts) {
     if (!state.firstTs) state.firstTs = ts;
     state.lastTs = ts;
@@ -101,6 +151,12 @@ function processEntry(entry, state, records, fileMeta) {
         state.lastPromptPreview = preview;
       }
     }
+    finalizeChain(state, records, fileMeta);
+    const turnId = typeof entry.requestSetId === "string" ? entry.requestSetId : null;
+    if (turnId && !isToolResultLine(entry) && state.openTurn?.turnId !== turnId) {
+      const turnModel = (typeof entry.businessModelKey === "string" && entry.businessModelKey) || state.model || null;
+      state.openTurn = { turnId, model: turnModel };
+    }
     if (!isToolResultLine(entry) || contentTokens > 0) {
       state.ctxTokens += contentTokens;
     }
@@ -110,12 +166,24 @@ function processEntry(entry, state, records, fileMeta) {
   // assistant fragment chain
   const continuesChain = entry.parentUuid && entry.parentUuid === state.lastAssistantUuid;
   if (!continuesChain) {
+    finalizeChain(state, records, fileMeta);
     state.pendingOut = 0;
     state.inputSnapshot = state.ctxTokens;
+    state.chainEmitted = false;
+    state.chainTurnId = state.openTurn ? state.openTurn.turnId : null;
+    state.chainModel = state.openTurn?.model || state.model || null;
+    state.chainStopReason = null;
   }
   state.pendingOut += contentTokens;
   state.ctxTokens += contentTokens;
   state.lastAssistantUuid = entry.uuid ?? null;
+  state.chainTs = ts;
+  // Newer versions write a placeholder "auto" in message.model; the resolved
+  // model key lives on user entries (businessModelKey) and runtime config.
+  if (typeof message.model === "string" && message.model && message.model.toLowerCase() !== "auto") {
+    state.chainModel = message.model;
+  }
+  state.chainStopReason = typeof message.stop_reason === "string" ? message.stop_reason : null;
 
   const usage = message.usage && typeof message.usage === "object" ? message.usage : null;
   if (!usage) return;
@@ -145,5 +213,6 @@ function processEntry(entry, state, records, fileMeta) {
     promptId: state.lastPromptId,
   });
   state.requests += 1;
+  state.chainEmitted = true;
   state.pendingOut = 0;
 }

@@ -68,6 +68,7 @@ async function main() {
       [
         `扫描 ${result.scannedFiles} 个会话文件（解析 ${result.parsedFiles}，跳过 ${result.skippedFiles}）`,
         `新增请求记录 ${result.newRequests} 条，索引共 ${result.totalRequests} 条`,
+        `数据库轮次积分记录 ${result.turnRecords} 条（数据库共 ${result.dbTurns} 轮，本次新增 ${result.newTurnRecords}）`,
         `读取 ${(result.bytesRead / 1024).toFixed(1)} KB，耗时 ${result.durationMs} ms`,
       ],
     );
