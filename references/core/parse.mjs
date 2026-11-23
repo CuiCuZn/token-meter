@@ -20,6 +20,7 @@ export function initialFileState() {
     lastAssistantUuid: null,
     lastPromptId: null,
     model: null,
+    modelHint: null,
     contextWindow: null,
     firstPromptPreview: null,
     lastPromptPreview: null,
@@ -152,9 +153,15 @@ function processEntry(entry, state, records, fileMeta) {
       }
     }
     finalizeChain(state, records, fileMeta);
+    if (typeof entry.businessModelKey === "string" && entry.businessModelKey) {
+      state.modelHint = entry.businessModelKey;
+    }
     const turnId = typeof entry.requestSetId === "string" ? entry.requestSetId : null;
     if (turnId && !isToolResultLine(entry) && state.openTurn?.turnId !== turnId) {
-      const turnModel = (typeof entry.businessModelKey === "string" && entry.businessModelKey) || state.model || null;
+      const turnModel = (typeof entry.businessModelKey === "string" && entry.businessModelKey)
+        || state.modelHint
+        || state.model
+        || null;
       state.openTurn = { turnId, model: turnModel };
     }
     if (!isToolResultLine(entry) || contentTokens > 0) {
@@ -171,17 +178,21 @@ function processEntry(entry, state, records, fileMeta) {
     state.inputSnapshot = state.ctxTokens;
     state.chainEmitted = false;
     state.chainTurnId = state.openTurn ? state.openTurn.turnId : null;
-    state.chainModel = state.openTurn?.model || state.model || null;
+    state.chainModel = state.openTurn?.model || state.modelHint || state.model || null;
     state.chainStopReason = null;
   }
   state.pendingOut += contentTokens;
   state.ctxTokens += contentTokens;
   state.lastAssistantUuid = entry.uuid ?? null;
   state.chainTs = ts;
-  // Newer versions write a placeholder "auto" in message.model; the resolved
-  // model key lives on user entries (businessModelKey) and runtime config.
-  if (typeof message.model === "string" && message.model && message.model.toLowerCase() !== "auto") {
-    state.chainModel = message.model;
+  // Newer versions write placeholder model names ("auto", "<synthetic>") on
+  // assistant entries; the resolved model key lives on user entries
+  // (businessModelKey) and runtime config.
+  if (typeof message.model === "string" && message.model) {
+    const lowered = message.model.toLowerCase();
+    if (lowered !== "auto" && lowered !== "<synthetic>" && lowered !== "unknown") {
+      state.chainModel = message.model;
+    }
   }
   state.chainStopReason = typeof message.stop_reason === "string" ? message.stop_reason : null;
 

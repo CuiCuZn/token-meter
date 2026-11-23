@@ -9,9 +9,14 @@ import path from "node:path";
 
 const APP_ID = "com.qodercn.app.stable";
 
+// Model display-name resolution. Curated static labels come first: the legacy
+// dynamic-text cache stopped being updated in newer app versions (names like
+// Qwen4-Max never land there), so it must not override current-gen names. The
+// cache is still used as a fallback for keys we have not curated yet.
+
 const STATIC_FALLBACK = new Map([
   ["auto", "自动"],
-  ["dfmodel", "DeepSeek-V4-Flash"],
+  ["dfmodel", "DeepSeek-Flash"],
   ["dmodel", "DeepSeek-V4-Pro"],
   ["gfmodel", "GLM-5.3-Flash"],
   ["gm51model", "GLM-5.2"],
@@ -21,7 +26,7 @@ const STATIC_FALLBACK = new Map([
   ["mmodel", "MiniMax-M3"],
   ["qfmodel", "Qwen3.8-Flash"],
   ["qmodel_38max", "Qwen3.8-Max"],
-  ["qmodel_latest", "Qwen3.7-Max"],
+  ["qmodel_latest", "Qwen4-Max"],
   ["qmodel", "Qwen3.7-Plus"],
 ]);
 
@@ -69,8 +74,8 @@ export function loadModelLabels() {
 
 export function resolveModelName(internal) {
   if (!internal) return "unknown";
+  if (STATIC_FALLBACK.has(internal)) return STATIC_FALLBACK.get(internal);
   const labels = loadModelLabels();
   if (labels[internal]) return labels[internal];
-  if (STATIC_FALLBACK.has(internal)) return STATIC_FALLBACK.get(internal);
   return internal;
 }

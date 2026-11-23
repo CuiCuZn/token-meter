@@ -66,8 +66,9 @@ SKILL_DIR="$HOME/.qoder-cn/skills/token-panel"
   估算」即可。
 - **积分 credits**：旧数据来自转录 usage、新数据来自数据库每轮实扣值，均为真实值；
   新数据的积分粒度是「轮」（一次提问=一轮），面板中仅作参考、不突出展示。
-- **模型名**：运行时读取 Qoder 本地模型目录缓存映射为真名（如 `dfmodel` →
-  `DeepSeek-V4-Flash`），Qoder 新增模型会自动跟上。
+- **模型名**：内置当前代际映射（如 `qmodel_latest` → Qwen4-Max、`dfmodel` →
+  DeepSeek-Flash；`auto`/`<synthetic>` 等占位值不参与归属），本地旧模型目录缓存仅
+  作未收录键的兜底，无法识别的键原样显示。
 - **索引缓存**：`~/.qoder-cn/token-meter/index.json`，按文件偏移量增量解析历史转录；
   数据库轮次每次刷新全量比对更新（同一轮按 session + turn 去重）。
 

@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { cacheDir, indexFile, lockFile } from "./paths.mjs";
 
-const INDEX_VERSION = 4;
+const INDEX_VERSION = 6;
 const LOCK_STALE_MS = 15000;
 const LOCK_RETRY_MS = 120;
 const LOCK_TIMEOUT_MS = 6000;
