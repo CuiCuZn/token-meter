@@ -1,6 +1,6 @@
 ---
 name: token-panel
-version: 0.5.0
+version: 0.5.1
 description: >-
   Show Qoder CN local token and credit usage: refresh the usage index from
   session transcripts, answer usage questions (today / 7 days / 30 days, by
